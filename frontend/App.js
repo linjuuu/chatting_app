@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert, SafeAreaView, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Alert, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { io } from 'socket.io-client';
 
 export default function App() {
@@ -11,6 +11,15 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState('');
+  const [tempName, setTempName] = useState('');
+  const confirmName = () => {
+    const cleaned = tempName.trim();
+    if (cleaned.length < 2) {
+      Alert.alert('이름 입력', '이름은 최소 2자 이상 입력해주세요.');
+      return;
+    }
+    setUsername(cleaned.slice(0, 10));
+  };
 
   useEffect(() => {
     // Socket.io 연결
@@ -139,22 +148,29 @@ export default function App() {
   if (!username) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
-          <Text style={styles.title}>채팅 앱</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="사용자명을 입력하세요"
-            value={username}
-            onChangeText={setUsername}
-            maxLength={20}
-          />
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => setUsername(username.trim())}
-          >
-            <Text style={styles.buttonText}>시작하기</Text>
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={styles.centerContainer}>
+            <Text style={styles.title}>채팅 앱</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="이름(2~10자)을 입력하세요"
+              value={tempName}
+              onChangeText={setTempName}
+              maxLength={10}
+              returnKeyType="done"
+              onSubmitEditing={confirmName}
+            />
+            <TouchableOpacity 
+              style={styles.button}
+              onPress={confirmName}
+            >
+              <Text style={styles.buttonText}>시작하기</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -179,35 +195,47 @@ export default function App() {
   if (currentRoom) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{partner}님과의 채팅</Text>
-          <TouchableOpacity onPress={endChat}>
-            <Text style={styles.endButton}>종료</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <FlatList
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesList}
-        />
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="메시지를 입력하세요"
-            value={newMessage}
-            onChangeText={setNewMessage}
-            multiline
-          />
-          <TouchableOpacity 
-            style={styles.sendButton}
-            onPress={sendMessage}
-          >
-            <Text style={styles.sendButtonText}>전송</Text>
-          </TouchableOpacity>
-        </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>{partner}님과의 채팅</Text>
+                <TouchableOpacity onPress={endChat}>
+                  <Text style={styles.endButton}>종료</Text>
+                </TouchableOpacity>
+              </View>
+
+              <FlatList
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={(item) => item.id}
+                style={styles.messagesList}
+                onContentSizeChange={() => {}}
+                onLayout={() => {}}
+              />
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.messageInput}
+                  placeholder="메시지를 입력하세요"
+                  value={newMessage}
+                  onChangeText={setNewMessage}
+                  multiline
+                />
+                <TouchableOpacity 
+                  style={styles.sendButton}
+                  onPress={sendMessage}
+                >
+                  <Text style={styles.sendButtonText}>전송</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
